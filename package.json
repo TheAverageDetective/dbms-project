@@ -4,14 +4,23 @@
   "version": "0.1.0",
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "build:connector": "tsc"
+    "build": "tsc",
+    "build:connector": "tsc",
+    "start": "node dist/src/server.js",
+    "dev": "ts-node src/server.ts"
   },
   "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
     "mysql2": "^3.11.5",
     "redis": "^4.7.0"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
     "@types/node": "^22.10.0",
+    "ts-node": "^10.9.2",
     "typescript": "^5.7.2"
   }
 }

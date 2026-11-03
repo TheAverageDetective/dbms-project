@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NexusTrade | Hybrid SQL+NoSQL Trading Engine</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0fdf4',
+              500: '#10b981',
+              600: '#059669',
+            },
+            dark: {
+              900: '#0b0f19',
+              800: '#131b2e',
+              700: '#1e293b',
+              600: '#334155',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="bg-[#0b0f19] text-slate-100 min-h-screen flex flex-col antialiased selection:bg-cyan-500 selection:text-white">
+
+  <!-- ============================================================ -->
+  <!-- LOGIN SCREEN (Authenticate with Database User & Password) -->
+  <!-- ============================================================ -->
+  <div id="login-screen" class="min-h-screen w-full flex items-center justify-center p-4 sm:p-6 bg-gradient-to-br from-[#060a12] via-[#09101f] to-[#0c162e]">
+    <div class="max-w-md w-full space-y-6 fade-in">
+      
+      <!-- Brand & Header -->
+      <div class="text-center space-y-2">
+        <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-tr from-cyan-600 via-blue-600 to-emerald-500 shadow-xl shadow-cyan-500/20 mb-1">
+          <i data-lucide="activity" class="w-8 h-8 text-white"></i>
+        </div>
+        <div class="flex items-center justify-center space-x-2">
+          <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-100 to-cyan-400 bg-clip-text text-transparent">
+            NexusTrade Sign In
+          </h1>
+          <span class="px-2 py-0.5 text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 rounded-full">DBMS Team 10</span>
+        </div>
+        <p class="text-xs text-slate-400">
+          Enter your registered email and password to access the trading terminal.
+        </p>
+      </div>
+
+      <!-- Main Login Card -->
+      <div class="glass-panel-elevated rounded-2xl p-6 sm:p-8 border border-slate-800 shadow-2xl space-y-5">
+        
+        <!-- Error Alert (Hidden by default) -->
+        <div id="login-error-alert" class="hidden p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-start space-x-2 fade-in">
+          <i data-lucide="alert-circle" class="w-4 h-4 shrink-0 mt-0.5"></i>
+          <span id="login-error-msg" class="flex-1">Invalid email or password</span>
+        </div>
+
+        <!-- Login Form -->
+        <form id="manual-login-form" onsubmit="handleManualLogin(event)" novalidate class="space-y-4">
+          
+          <!-- Email / Username Input -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Email or Username</label>
+            <div class="relative">
+              <input 
+                type="text" 
+                id="login-email" 
+                placeholder="Enter email or username" 
+                value=""
+                required 
+                autocomplete="username"
+                class="w-full bg-slate-900/90 border border-slate-700 text-white text-sm rounded-xl pl-10 pr-3 py-2.5 focus:ring-2 focus:ring-cyan-500 focus:outline-none font-mono placeholder:text-slate-500 transition" 
+              />
+              <i data-lucide="user" class="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5"></i>
+            </div>
+          </div>
+
+          <!-- Password Input -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Password</label>
+            <div class="relative">
+              <input 
+                type="password" 
+                id="login-password" 
+                placeholder="Enter password" 
+                value=""
+                required 
+                autocomplete="current-password"
+                class="w-full bg-slate-900/90 border border-slate-700 text-white text-sm rounded-xl pl-10 pr-10 py-2.5 focus:ring-2 focus:ring-cyan-500 focus:outline-none font-mono placeholder:text-slate-500 transition" 
+              />
+              <i data-lucide="lock" class="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5"></i>
+              <button 
+                type="button" 
+                onclick="togglePasswordVisibility()" 
+                class="absolute right-3 top-3 text-slate-400 hover:text-white transition"
+                title="Toggle password visibility"
+              >
+                <i id="password-toggle-icon" data-lucide="eye" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Submit Button -->
+          <button 
+            type="submit" 
+            id="login-submit-btn" 
+            class="w-full py-3 px-4 bg-gradient-to-r from-cyan-600 via-blue-600 to-cyan-500 hover:from-cyan-500 hover:to-blue-500 text-white font-bold rounded-xl text-sm transition shadow-lg shadow-cyan-600/25 active:scale-[0.98] flex items-center justify-center space-x-2 mt-4"
+          >
+            <i data-lucide="log-in" class="w-4 h-4"></i>
+            <span id="login-btn-text">Log In to Terminal</span>
+          </button>
+        </form>
+
+      </div>
+
+      <!-- Live Connection Status Pills -->
+      <div class="flex items-center justify-center space-x-3 text-xs text-slate-400">
+        <div class="flex items-center space-x-1.5">
+          <span class="pulse-dot online"></span>
+          <span>MySQL Database</span>
+        </div>
+        <span class="text-slate-700">&bull;</span>
+        <div class="flex items-center space-x-1.5">
+          <span class="pulse-dot online bg-cyan-400"></span>
+          <span>Redis Queue</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- MAIN APPLICATION SCREEN (Visible after Login) -->
+  <!-- ============================================================ -->
+  <div id="app-screen" class="hidden flex-1 flex flex-col">
+
+  <!-- Top Sticky Navigation -->
+  <header class="sticky top-0 z-40 bg-[#0d1424]/90 backdrop-blur-md border-b border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        
+        <!-- Logo & Branding -->
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-600 via-blue-600 to-emerald-500 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+            <i data-lucide="activity" class="w-6 h-6 text-white"></i>
+          </div>
+          <div>
+            <div class="flex items-center space-x-2">
+              <span class="font-bold text-lg tracking-tight bg-gradient-to-r from-white via-slate-200 to-cyan-400 bg-clip-text text-transparent">NexusTrade</span>
+              <span class="px-2 py-0.5 text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full">DBMS Team 10</span>
+            </div>
+            <p class="text-[11px] text-slate-400">Real-Time Trading Platform</p>
+          </div>
+        </div>
+
+        <!-- System Health Pill -->
+        <div class="hidden md:flex items-center space-x-3 bg-slate-900/80 px-3 py-1.5 rounded-full border border-slate-800 text-xs">
+          <div class="flex items-center space-x-1.5" title="Primary Database">
+            <span id="mysql-status-dot" class="pulse-dot online"></span>
+            <span class="text-slate-300 font-medium">Database</span>
+            <span id="mysql-db-label" class="text-slate-400">Connected</span>
+          </div>
+          <span class="text-slate-700">|</span>
+          <div class="flex items-center space-x-1.5" title="In-Memory Queue Engine">
+            <span id="redis-status-dot" class="pulse-dot online bg-cyan-400"></span>
+            <span class="text-slate-300 font-medium">Fast Queue</span>
+            <span id="redis-pending-count" class="px-1.5 py-0.2 bg-cyan-500/20 text-cyan-300 rounded font-mono font-bold">0</span>
+          </div>
+        </div>
+
+        <!-- Active User Badge & Actions -->
+        <div class="flex items-center space-x-3">
+          
+          <!-- Current User Chip -->
+          <div class="flex items-center space-x-2 bg-slate-900 border border-slate-700 px-3 py-1.5 rounded-xl">
+            <div id="nav-user-avatar" class="w-6 h-6 rounded-full bg-cyan-600 flex items-center justify-center text-[10px] font-bold text-white uppercase">
+              U
+            </div>
+            <div class="text-left">
+              <div id="nav-user-name" class="text-xs font-bold text-white truncate max-w-[120px]">User</div>
+              <div class="flex items-center space-x-1.5">
+                <span id="nav-user-account" class="text-[10px] text-cyan-400 font-mono">Acc #1</span>
+                <span id="nav-user-role-badge" class="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-cyan-950 text-cyan-400 border border-cyan-800 uppercase">Trader</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Switch User / Logout Button -->
+          <button onclick="logoutUser()" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white rounded-lg text-xs font-medium flex items-center space-x-1.5 transition" title="Switch to another registered investor">
+            <i data-lucide="log-out" class="w-3.5 h-3.5 text-rose-400"></i>
+            <span class="hidden sm:inline">Switch User</span>
+          </button>
+
+          <!-- Deposit Button -->
+          <button onclick="openDepositModal()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 rounded-lg text-xs font-medium flex items-center space-x-1.5 transition">
+            <i data-lucide="wallet" class="w-3.5 h-3.5 text-emerald-400"></i>
+            <span>Deposit</span>
+          </button>
+
+          <!-- Flush Redis Batch Button -->
+          <button onclick="triggerFlush()" id="btn-flush" class="px-3.5 py-1.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-lg text-xs font-semibold flex items-center space-x-1.5 shadow-md shadow-cyan-600/20 transition active:scale-95">
+            <i data-lucide="zap" class="w-3.5 h-3.5"></i>
+            <span>Flush Redis Batch</span>
+            <span id="flush-badge" class="ml-1 bg-white/20 px-1.5 py-0.5 rounded text-[10px] font-mono">0</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <nav class="flex space-x-1 sm:space-x-4 border-t border-slate-800/60 pt-1 overflow-x-auto">
+        <button onclick="switchTab('markets')" id="tab-markets" class="tab-btn active px-3 py-2 text-xs sm:text-sm font-medium flex items-center space-x-2 text-cyan-400 border-b-2 border-cyan-400">
+          <i data-lucide="trending-up" class="w-4 h-4"></i>
+          <span>Markets & Trading</span>
+        </button>
+        <button onclick="switchTab('portfolio')" id="tab-portfolio" class="tab-btn px-3 py-2 text-xs sm:text-sm font-medium flex items-center space-x-2 text-slate-400 hover:text-slate-200 border-b-2 border-transparent">
+          <i data-lucide="pie-chart" class="w-4 h-4"></i>
+          <span>My Portfolio</span>
+          <span id="portfolio-count-badge" class="bg-slate-800 px-1.5 py-0.2 rounded text-[11px] text-slate-400">0</span>
+        </button>
+        <button onclick="switchTab('orders')" id="tab-orders" class="tab-btn px-3 py-2 text-xs sm:text-sm font-medium flex items-center space-x-2 text-slate-400 hover:text-slate-200 border-b-2 border-transparent">
+          <i data-lucide="receipt" class="w-4 h-4"></i>
+          <span>Trades & Audit Log</span>
+        </button>
+        <button onclick="switchTab('redis')" id="tab-redis" class="tab-btn hidden px-3 py-2 text-xs sm:text-sm font-medium items-center space-x-2 text-slate-400 hover:text-slate-200 border-b-2 border-transparent">
+          <i data-lucide="database" class="w-4 h-4"></i>
+          <span>Execution Queue</span>
+          <span class="px-1.5 py-0.2 text-[9px] font-mono uppercase bg-purple-950 text-purple-300 border border-purple-800 rounded font-bold">Admin</span>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Global Metrics Bar -->
+  <section class="bg-[#101728]/70 border-b border-slate-800/80 px-4 py-3">
+    <div class="max-w-7xl mx-auto grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+      <!-- Active Cash Balance -->
+      <div class="bg-slate-900/60 rounded-xl p-3 border border-slate-800/60">
+        <span class="text-[11px] font-medium text-slate-400 flex items-center space-x-1">
+          <i data-lucide="coins" class="w-3.5 h-3.5 text-emerald-400"></i>
+          <span>Cash Balance</span>
+        </span>
+        <div id="stat-cash" class="text-base font-bold text-white mt-1 font-mono">₹ 0.00</div>
+        <span id="stat-account-name" class="text-[10px] text-slate-400 truncate block">Select Account</span>
+      </div>
+
+      <!-- Portfolio Value -->
+      <div class="bg-slate-900/60 rounded-xl p-3 border border-slate-800/60">
+        <span class="text-[11px] font-medium text-slate-400 flex items-center space-x-1">
+          <i data-lucide="briefcase" class="w-3.5 h-3.5 text-cyan-400"></i>
+          <span>Holdings Value</span>
+        </span>
+        <div id="stat-market-val" class="text-base font-bold text-cyan-400 mt-1 font-mono">₹ 0.00</div>
+        <span id="stat-total-worth" class="text-[10px] text-slate-400 block font-mono">Net: ₹ 0.00</span>
+      </div>
+
+      <!-- Unrealized P&L -->
+      <div class="bg-slate-900/60 rounded-xl p-3 border border-slate-800/60">
+        <span class="text-[11px] font-medium text-slate-400 flex items-center space-x-1">
+          <i data-lucide="scale" class="w-3.5 h-3.5 text-indigo-400"></i>
+          <span>Unrealized P&L</span>
+        </span>
+        <div id="stat-pnl" class="text-base font-bold text-emerald-400 mt-1 font-mono">+₹ 0.00</div>
+        <span id="stat-pnl-pct" class="text-[10px] text-emerald-400 block font-semibold">+0.00%</span>
+      </div>
+
+      <!-- Total Traded Volume (All Time) -->
+      <div class="bg-slate-900/60 rounded-xl p-3 border border-slate-800/60">
+        <span class="text-[11px] font-medium text-slate-400 flex items-center space-x-1">
+          <i data-lucide="bar-chart-2" class="w-3.5 h-3.5 text-yellow-400"></i>
+          <span>Total Traded Value</span>
+        </span>
+        <div id="stat-total-traded" class="text-base font-bold text-white mt-1 font-mono">₹ 0.00</div>
+        <span class="text-[10px] text-slate-400 block">All-time traded volume</span>
+      </div>
+
+      <!-- Redis Stream Queue -->
+      <div class="bg-slate-900/60 rounded-xl p-3 border border-slate-800/60">
+        <span class="text-[11px] font-medium text-slate-400 flex items-center space-x-1">
+          <i data-lucide="layers" class="w-3.5 h-3.5 text-amber-400"></i>
+          <span>Pending Settlement</span>
+        </span>
+        <div id="stat-redis-pending" class="text-base font-bold text-amber-400 mt-1 font-mono">0 trades</div>
+        <div class="flex items-center space-x-1 mt-0.5">
+          <span class="text-[10px] text-slate-400">Auto-Flush:</span>
+          <button onclick="toggleAutoFlush()" id="btn-toggle-autoflush" class="text-[10px] font-semibold text-rose-400 hover:text-rose-300">OFF</button>
+        </div>
+      </div>
+
+      <!-- Executed vs Rejected -->
+      <div class="bg-slate-900/60 rounded-xl p-3 border border-slate-800/60">
+        <span class="text-[11px] font-medium text-slate-400 flex items-center space-x-1">
+          <i data-lucide="check-check" class="w-3.5 h-3.5 text-emerald-400"></i>
+          <span>Executed / Rejected</span>
+        </span>
+        <div class="text-base font-bold text-white mt-1 font-mono">
+          <span id="stat-executed-count" class="text-emerald-400">0</span>
+          <span class="text-slate-500">/</span>
+          <span id="stat-rejected-count" class="text-rose-400">0</span>
+        </div>
+        <span class="text-[10px] text-slate-400 block">Settlement status</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Container -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
+
+    <!-- ============================================================ -->
+    <!-- TAB 1: MARKETS & TRADING -->
+    <!-- ============================================================ -->
+    <div id="content-markets" class="fade-in space-y-6">
+      
+      <!-- Top Markets Row: Live Tickers & Quick Trade Terminal -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Live Stocks Table (2 Columns wide) -->
+        <div class="lg:col-span-2 glass-panel rounded-2xl p-5 border border-slate-800">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h2 class="text-lg font-bold text-white flex items-center space-x-2">
+                <i data-lucide="candlestick-chart" class="w-5 h-5 text-cyan-400"></i>
+                <span>Indian Equities Market</span>
+              </h2>
+              <p class="text-xs text-slate-400">Real-time quotes with instant BUY/SELL order placement</p>
+            </div>
+            <div class="flex items-center space-x-2">
+              <span class="text-xs text-slate-400">Auto-refreshing 3s</span>
+              <button onclick="loadStocks()" class="p-1.5 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition" title="Refresh Now">
+                <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Stock List Table -->
+          <div class="overflow-x-auto">
+            <table class="w-full text-left">
+              <thead>
+                <tr class="border-b border-slate-800 text-slate-400">
+                  <th>Symbol</th>
+                  <th>Company</th>
+                  <th class="text-right">Current Price</th>
+                  <th class="text-right">Simulate Price</th>
+                  <th class="text-center">Action</th>
+                </tr>
+              </thead>
+              <tbody id="stocks-tbody">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Quick Trading Box & Execution Lifecycle Guide -->
+        <div class="space-y-6">
+          
+          <!-- Immediate Trade Order Box -->
+          <div class="glass-panel-elevated rounded-2xl p-5 border border-slate-800/80 shadow-xl">
+            <h3 class="text-base font-bold text-white flex items-center space-x-2 mb-3">
+              <i data-lucide="zap" class="w-4 h-4 text-amber-400"></i>
+              <span>Quick Trade Terminal</span>
+            </h3>
+
+            <form id="quick-trade-form" onsubmit="handleQuickTrade(event)" class="space-y-3.5">
+              <!-- Side Selector: BUY / SELL -->
+              <div class="grid grid-cols-2 gap-2 bg-slate-900 p-1 rounded-xl border border-slate-800">
+                <button type="button" id="side-buy-btn" onclick="setQuickSide('BUY')" class="py-2 text-xs font-bold rounded-lg bg-emerald-500 text-white shadow-md shadow-emerald-500/20 transition">BUY</button>
+                <button type="button" id="side-sell-btn" onclick="setQuickSide('SELL')" class="py-2 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition">SELL</button>
+              </div>
+
+              <!-- Stock Picker -->
+              <div>
+                <label class="block text-xs font-medium text-slate-400 mb-1">Select Asset</label>
+                <select id="quick-stock-select" onchange="updateQuickEstimate()" class="w-full bg-slate-900 border border-slate-700 text-white text-sm rounded-lg px-3 py-2 focus:ring-2 focus:ring-cyan-500 focus:outline-none">
+                  <!-- Populated from stocks -->
+                </select>
+              </div>
+
+              <!-- Quantity Input -->
+              <div>
+                <div class="flex justify-between items-center mb-1">
+                  <label class="block text-xs font-medium text-slate-400">Quantity (Shares)</label>
+                  <span id="quick-holding-hint" class="text-[11px] text-slate-400 font-mono">Holding: 0 shares</span>
+                </div>
+                <input type="number" id="quick-quantity" min="1" value="10" oninput="updateQuickEstimate()" required class="w-full bg-slate-900 border border-slate-700 text-white text-sm rounded-lg px-3 py-2 font-mono focus:ring-2 focus:ring-cyan-500 focus:outline-none" />
+              </div>
+
+              <!-- Price & Total Calculation Card -->
+              <div class="bg-slate-900/90 rounded-xl p-3 border border-slate-800 text-xs space-y-1.5 font-mono">
+                <div class="flex justify-between text-slate-400">
+                  <span>Execution Price:</span>
+                  <span id="quick-quote-price" class="text-white font-semibold">₹ 0.00</span>
+                </div>
+                <div class="flex justify-between text-slate-400 border-t border-slate-800 pt-1.5">
+                  <span class="font-sans font-medium">Estimated Total:</span>
+                  <span id="quick-total-estimate" class="text-cyan-400 font-bold text-sm">₹ 0.00</span>
+                </div>
+              </div>
+
+              <!-- Submit Button -->
+              <button type="submit" id="quick-submit-btn" class="w-full py-2.5 px-4 bg-emerald-500 hover:bg-emerald-400 text-white font-bold rounded-xl text-sm transition shadow-lg shadow-emerald-500/20 flex items-center justify-center space-x-2">
+                <i data-lucide="send" class="w-4 h-4"></i>
+                <span id="quick-btn-label">Enqueue BUY Order</span>
+              </button>
+
+              <p class="text-[11px] text-slate-400 text-center">
+                Instant market execution &bull; Real-time settlement
+              </p>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stock Aggregates (Admin Only) -->
+      <div id="stock-summary-container" class="glass-panel rounded-2xl p-5 border border-slate-800 hidden">
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <div class="flex items-center space-x-2">
+              <h3 class="text-base font-bold text-white flex items-center space-x-2">
+                <i data-lucide="table" class="w-4 h-4 text-indigo-400"></i>
+                <span>Stock Trading Summary</span>
+              </h3>
+              <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-purple-950 text-purple-300 border border-purple-800 uppercase font-bold">Admin Only</span>
+            </div>
+            <p class="text-xs text-slate-400">Market-wide summary of traded volume and executed shares</p>
+          </div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left">
+            <thead>
+              <tr class="border-b border-slate-800 text-slate-400">
+                <th>Symbol</th>
+                <th>Company</th>
+                <th class="text-right">Total Trades</th>
+                <th class="text-right">Shares Bought</th>
+                <th class="text-right">Shares Sold</th>
+                <th class="text-right">Total Traded Value</th>
+              </tr>
+            </thead>
+            <tbody id="summary-tbody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- TAB 2: PORTFOLIO & HOLDINGS -->
+    <!-- ============================================================ -->
+    <div id="content-portfolio" class="hidden fade-in space-y-6">
+      
+      <!-- Portfolio Overview Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="glass-panel rounded-2xl p-4 border border-slate-800">
+          <span class="text-xs text-slate-400 font-medium">Available Cash</span>
+          <div id="port-cash" class="text-xl font-bold text-white mt-1 font-mono">₹ 0.00</div>
+          <span class="text-[11px] text-slate-400">Instant buying power</span>
+        </div>
+        <div class="glass-panel rounded-2xl p-4 border border-slate-800">
+          <span class="text-xs text-slate-400 font-medium">Total Cost Basis</span>
+          <div id="port-cost" class="text-xl font-bold text-slate-200 mt-1 font-mono">₹ 0.00</div>
+          <span class="text-[11px] text-slate-400">Weighted average buy cost</span>
+        </div>
+        <div class="glass-panel rounded-2xl p-4 border border-slate-800">
+          <span class="text-xs text-slate-400 font-medium">Current Market Value</span>
+          <div id="port-value" class="text-xl font-bold text-cyan-400 mt-1 font-mono">₹ 0.00</div>
+          <span class="text-[11px] text-slate-400">Based on live stock quotes</span>
+        </div>
+        <div class="glass-panel rounded-2xl p-4 border border-slate-800">
+          <span class="text-xs text-slate-400 font-medium">Total Unrealized P&L</span>
+          <div id="port-pnl" class="text-xl font-bold text-emerald-400 mt-1 font-mono">+₹ 0.00</div>
+          <span id="port-pnl-pct" class="text-[11px] font-semibold text-emerald-400">+0.00%</span>
+        </div>
+      </div>
+
+      <!-- Holdings Table & Asset Chart Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Holdings Table -->
+        <div class="lg:col-span-2 glass-panel rounded-2xl p-5 border border-slate-800">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="text-base font-bold text-white flex items-center space-x-2">
+                <i data-lucide="layers" class="w-4 h-4 text-emerald-400"></i>
+                <span>Current Holdings</span>
+              </h3>
+              <p class="text-xs text-slate-400">Your open stock positions and unrealized profit & loss</p>
+            </div>
+            <button onclick="loadPortfolio()" class="p-1.5 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition">
+              <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+            </button>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left">
+              <thead>
+                <tr class="border-b border-slate-800 text-slate-400">
+                  <th>Asset</th>
+                  <th class="text-right">Quantity</th>
+                  <th class="text-right">Avg Cost</th>
+                  <th class="text-right">Live Price</th>
+                  <th class="text-right">Market Value</th>
+                  <th class="text-right">Unrealized P&L</th>
+                  <th class="text-center">Action</th>
+                </tr>
+              </thead>
+              <tbody id="holdings-tbody">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Asset Allocation Donut Chart -->
+        <div class="glass-panel rounded-2xl p-5 border border-slate-800 flex flex-col justify-between">
+          <div>
+            <h4 class="text-sm font-bold text-white flex items-center space-x-2 mb-3">
+              <i data-lucide="pie-chart" class="w-4 h-4 text-cyan-400"></i>
+              <span>Asset Distribution</span>
+            </h4>
+            <div class="relative h-56 flex items-center justify-center">
+              <canvas id="portfolioChart"></canvas>
+            </div>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-800/80 text-[11px] text-slate-400 flex justify-between">
+            <span>Portfolio Valuation:</span>
+            <span class="text-emerald-400 font-medium">Live Market Quotes</span>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- TAB 3: TRADES & AUDIT LOG -->
+    <!-- ============================================================ -->
+    <div id="content-orders" class="hidden fade-in space-y-6">
+
+      <!-- Executed Trades History -->
+      <div class="glass-panel rounded-2xl p-5 border border-slate-800">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="text-base font-bold text-white flex items-center space-x-2">
+              <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>
+              <span>Executed Trades</span>
+            </h3>
+            <p id="trades-subtitle" class="text-xs text-slate-400">Confirmed transaction records</p>
+          </div>
+          <button onclick="loadTradesHistory()" class="p-1.5 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition">
+            <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+          </button>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left">
+            <thead>
+              <tr class="border-b border-slate-800 text-slate-400">
+                <th>Trade ID</th>
+                <th>Order ID</th>
+                <th>Account / User</th>
+                <th>Asset</th>
+                <th>Side</th>
+                <th class="text-right">Shares</th>
+                <th class="text-right">Exec Price</th>
+                <th class="text-right">Total Value</th>
+                <th class="text-right">Executed At</th>
+              </tr>
+            </thead>
+            <tbody id="trades-tbody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Trade Audit Table -->
+      <div class="glass-panel rounded-2xl p-5 border border-slate-800">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="text-base font-bold text-white flex items-center space-x-2">
+              <i data-lucide="clipboard-list" class="w-4 h-4 text-yellow-400"></i>
+              <span>Trade Audit Log</span>
+            </h3>
+            <p id="audit-subtitle" class="text-xs text-slate-400">Immutable compliance and audit trail</p>
+          </div>
+          <button onclick="loadAuditLog()" class="p-1.5 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition">
+            <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+          </button>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left">
+            <thead>
+              <tr class="border-b border-slate-800 text-slate-400">
+                <th>Audit ID</th>
+                <th>Trade ID</th>
+                <th>Order ID</th>
+                <th>User</th>
+                <th>Symbol</th>
+                <th>Side</th>
+                <th class="text-right">Quantity</th>
+                <th class="text-right">Execution Price</th>
+                <th class="text-right">Audit Timestamp</th>
+              </tr>
+            </thead>
+            <tbody id="audit-tbody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Order Staging Queue Table -->
+      <div class="glass-panel rounded-2xl p-5 border border-slate-800">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="text-base font-bold text-white flex items-center space-x-2">
+              <i data-lucide="git-pull-request" class="w-4 h-4 text-cyan-400"></i>
+              <span>Order Staging Queue</span>
+            </h3>
+            <p id="staging-subtitle" class="text-xs text-slate-400">Staged events awaiting batch settlement</p>
+          </div>
+          <button onclick="loadStagingRows()" class="p-1.5 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition">
+            <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+          </button>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left">
+            <thead>
+              <tr class="border-b border-slate-800 text-slate-400">
+                <th>Event ID (Redis)</th>
+                <th>Batch ID</th>
+                <th>User / Account</th>
+                <th>Symbol</th>
+                <th>Side</th>
+                <th class="text-right">Quantity</th>
+                <th>Status</th>
+                <th>Error Message / Order ID</th>
+                <th class="text-right">Staged Time</th>
+              </tr>
+            </thead>
+            <tbody id="staging-tbody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- TAB 4: REDIS NOSQL PIPELINE -->
+    <!-- ============================================================ -->
+    <div id="content-redis" class="hidden fade-in space-y-6">
+      
+      <!-- Redis Pipeline Status Header -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        
+        <!-- Stream Status -->
+        <div class="glass-panel rounded-2xl p-4 border border-cyan-500/20">
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-slate-400">Order Routing Stream</span>
+            <span class="px-2 py-0.5 rounded text-[10px] bg-cyan-500/20 text-cyan-300 font-mono">Stream</span>
+          </div>
+          <div class="text-lg font-bold text-white mt-1">High-Speed Ingest</div>
+          <p class="text-[11px] text-slate-400 mt-1">Sub-millisecond order buffering and queuing</p>
+        </div>
+
+        <!-- Dead Letter Stream -->
+        <div class="glass-panel rounded-2xl p-4 border border-rose-500/20">
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-slate-400">Rejections Queue</span>
+            <span class="px-2 py-0.5 rounded text-[10px] bg-rose-500/20 text-rose-300 font-mono">Failed</span>
+          </div>
+          <div class="text-lg font-bold text-white mt-1">Failed Orders</div>
+          <p class="text-[11px] text-slate-400 mt-1">Requests rejected due to balance or share limits</p>
+        </div>
+
+        <!-- Checkpoint & Flush Control -->
+        <div class="glass-panel rounded-2xl p-4 border border-emerald-500/20">
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-slate-400">Settlement Checkpoint</span>
+            <span class="px-2 py-0.5 rounded text-[10px] bg-emerald-500/20 text-emerald-300 font-mono">Synced</span>
+          </div>
+          <div id="redis-last-checkpoint" class="text-sm font-bold text-emerald-400 mt-1 font-mono truncate">0-0</div>
+          <p class="text-[11px] text-slate-400 mt-1">Committed batch checkpoint</p>
+        </div>
+      </div>
+
+      <!-- Live Queue Viewer & Top Requested Stocks Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Live Stream Events (2 Columns) -->
+        <div class="lg:col-span-2 glass-panel rounded-2xl p-5 border border-slate-800">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="text-base font-bold text-white flex items-center space-x-2">
+                <i data-lucide="radio" class="w-4 h-4 text-cyan-400"></i>
+                <span>Live Order Stream</span>
+              </h3>
+              <p class="text-xs text-slate-400">Real-time order requests received by execution engine</p>
+            </div>
+            <button onclick="loadRedisStream()" class="p-1.5 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition">
+              <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+            </button>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left font-mono text-xs">
+              <thead>
+                <tr class="border-b border-slate-800 text-slate-400">
+                  <th>Stream Event ID</th>
+                  <th>Account ID</th>
+                  <th>Symbol</th>
+                  <th>Side</th>
+                  <th class="text-right">Quantity</th>
+                  <th class="text-center">Live Status</th>
+                </tr>
+              </thead>
+              <tbody id="redis-stream-tbody">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Top Requested Stocks -->
+        <div class="glass-panel rounded-2xl p-5 border border-slate-800">
+          <h4 class="text-sm font-bold text-white flex items-center space-x-2 mb-2">
+            <i data-lucide="flame" class="w-4 h-4 text-amber-400"></i>
+            <span>Most Active Equities</span>
+          </h4>
+          <p class="text-[11px] text-slate-400 mb-3">Live asset trading activity ranking</p>
+
+          <div id="zset-leaderboard" class="space-y-2">
+            <!-- Dynamically populated -->
+          </div>
+
+          <!-- Platform Analytics -->
+          <div class="mt-5 pt-4 border-t border-slate-800">
+            <h5 class="text-xs font-bold text-slate-300 mb-2">Platform Metrics</h5>
+            <div id="redis-hash-counters" class="grid grid-cols-2 gap-2 text-xs font-mono">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rejected Orders Table -->
+      <div class="glass-panel rounded-2xl p-5 border border-slate-800">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="text-base font-bold text-white flex items-center space-x-2">
+              <i data-lucide="alert-octagon" class="w-4 h-4 text-rose-400"></i>
+              <span>Rejected Orders</span>
+            </h3>
+            <p class="text-xs text-slate-400">Orders that could not be executed due to validation constraints</p>
+          </div>
+          <button onclick="loadRedisRejections()" class="p-1.5 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition">
+            <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+          </button>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left font-mono text-xs">
+            <thead>
+              <tr class="border-b border-slate-800 text-slate-400">
+                <th>Event ID</th>
+                <th>Original Event ID</th>
+                <th>Account</th>
+                <th>Symbol</th>
+                <th>Side</th>
+                <th class="text-right">Shares</th>
+                <th class="text-rose-400">Rejection Reason</th>
+              </tr>
+            </thead>
+            <tbody id="rejections-tbody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+  </div> <!-- /#app-screen -->
+
+  <!-- ============================================================ -->
+  <!-- MODAL: DEPOSIT CASH -->
+  <!-- ============================================================ -->
+  <div id="deposit-modal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="glass-panel-elevated max-w-sm w-full rounded-2xl p-6 border border-slate-700 shadow-2xl fade-in">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="font-bold text-white text-base flex items-center space-x-2">
+          <i data-lucide="wallet" class="w-5 h-5 text-emerald-400"></i>
+          <span>Deposit Cash Balance</span>
+        </h3>
+        <button onclick="closeDepositModal()" class="text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <form onsubmit="handleDepositSubmit(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">Active Account</label>
+          <div id="deposit-account-name" class="p-2.5 bg-slate-900 rounded-lg text-xs font-semibold text-white border border-slate-800">
+            Account #1
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">Deposit Amount (₹)</label>
+          <input type="number" id="deposit-amount" min="100" step="100" value="50000" required class="w-full bg-slate-900 border border-slate-700 text-white text-sm rounded-lg px-3 py-2 font-mono focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
+        </div>
+        <div class="grid grid-cols-3 gap-2">
+          <button type="button" onclick="setDepositValue(10000)" class="py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-xs font-mono">+10,000</button>
+          <button type="button" onclick="setDepositValue(50000)" class="py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-xs font-mono">+50,000</button>
+          <button type="button" onclick="setDepositValue(100000)" class="py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-xs font-mono">+1,00,000</button>
+        </div>
+        <div class="flex space-x-2 pt-2">
+          <button type="button" onclick="closeDepositModal()" class="flex-1 py-2 bg-slate-800 text-slate-300 hover:text-white rounded-xl text-xs font-semibold">Cancel</button>
+          <button type="submit" class="flex-1 py-2 bg-emerald-500 hover:bg-emerald-400 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-500/20">Confirm Deposit</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- MODAL: SIMULATE / EDIT STOCK PRICE -->
+  <!-- ============================================================ -->
+  <div id="price-modal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="glass-panel-elevated max-w-sm w-full rounded-2xl p-6 border border-slate-700 shadow-2xl fade-in">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="font-bold text-white text-base flex items-center space-x-2">
+          <i data-lucide="edit-3" class="w-5 h-5 text-cyan-400"></i>
+          <span>Simulate Market Price</span>
+        </h3>
+        <button onclick="closePriceModal()" class="text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <form onsubmit="handlePriceSubmit(event)" class="space-y-4">
+        <input type="hidden" id="edit-stock-id" />
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">Asset Symbol</label>
+          <div id="edit-stock-symbol" class="p-2.5 bg-slate-900 rounded-lg text-xs font-mono font-bold text-cyan-400 border border-slate-800">
+            TCS
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">New Execution Quote (₹)</label>
+          <input type="number" id="edit-stock-price" min="0.01" step="0.05" required class="w-full bg-slate-900 border border-slate-700 text-white text-sm rounded-lg px-3 py-2 font-mono focus:ring-2 focus:ring-cyan-500 focus:outline-none" />
+        </div>
+        <p class="text-[11px] text-slate-400">
+          Updating the price simulates real market fluctuations and instantly recalculates unrealized P&L in the portfolio view.
+        </p>
+        <div class="flex space-x-2 pt-2">
+          <button type="button" onclick="closePriceModal()" class="flex-1 py-2 bg-slate-800 text-slate-300 hover:text-white rounded-xl text-xs font-semibold">Cancel</button>
+          <button type="submit" class="flex-1 py-2 bg-cyan-500 hover:bg-cyan-400 text-white rounded-xl text-xs font-bold shadow-lg shadow-cyan-500/20">Update Price</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Notifications Container -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+  <!-- Application Logic -->
+  <script src="app.js"></script>
+</body>
+</html>
+
