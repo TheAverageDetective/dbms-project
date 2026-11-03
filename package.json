@@ -1,0 +1,17 @@
+{
+  "name": "trading-app-foundation",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build:connector": "tsc"
+  },
+  "dependencies": {
+    "mysql2": "^3.11.5",
+    "redis": "^4.7.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.2"
+  }
+}
