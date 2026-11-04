@@ -115,5 +115,3 @@ Open your browser at:
    - Sorted set leaderboard of top traded assets.
    - Manual **"Flush Redis Batch"** button & **Auto-Flush** toggle.
    - Copy-paste `wsl redis-cli` cheat sheet commands for lab viva demos.
-5. **DBMS Viva & Architecture Guide**:
-   - Interactive breakdown of all 5 evaluated database concepts with schema references and code snippets.
